@@ -2,17 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const sessions = await prisma.researchSession.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    include: {
-      report:   { select: { content: true } },
-      sources:  { select: { title: true, url: true, snippet: true } },
-      listings: { select: { name: true, price: true, phone: true, address: true, rating: true, website: true, image: true, notes: true } },
-    },
-  });
-
-  return NextResponse.json({ sessions });
+  try {
+    const sessions = await prisma.researchSession.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: {
+        report:   { select: { content: true } },
+        sources:  { select: { title: true, url: true, snippet: true } },
+        listings: { select: { name: true, price: true, phone: true, address: true, rating: true, website: true, image: true, notes: true } },
+      },
+    });
+    return NextResponse.json({ sessions });
+  } catch (err) {
+    console.error("[history GET]", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to load history", sessions: [] },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(req: Request) {
