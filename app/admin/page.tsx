@@ -66,7 +66,7 @@ function EditRow({
 
   return (
     <div className="px-5 py-4 bg-secondary/30 border-b border-border space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Username */}
         <div className="space-y-1.5">
           <Label className="text-xs">Username</Label>
@@ -204,8 +204,8 @@ export default function AdminPage() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-e border-border flex flex-col">
+      {/* Sidebar — desktop only */}
+      <aside className="hidden md:flex w-64 shrink-0 border-e border-border flex-col">
         <div className="h-16 flex items-center px-6 border-b border-border gap-2">
           <div className="h-7 w-7 rounded-lg bg-foreground flex items-center justify-center">
             <Zap className="h-4 w-4 text-background" />
@@ -216,9 +216,6 @@ export default function AdminPage() {
           <Link href="/" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
             <Zap className="h-4 w-4" />New Research
           </Link>
-          <Link href="/history" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
-            <History className="h-4 w-4" />History
-          </Link>
           <Link href="/admin" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm bg-secondary text-foreground border border-border">
             <ShieldCheck className="h-4 w-4" />User Management
           </Link>
@@ -226,23 +223,23 @@ export default function AdminPage() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 shrink-0 border-b border-border flex items-center px-6 gap-3">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <header className="h-14 shrink-0 border-b border-border flex items-center px-4 gap-3">
           <Link href="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
-          <h1 className="text-xl font-semibold text-foreground">User Management</h1>
+          <h1 className="text-base sm:text-xl font-semibold text-foreground">User Management</h1>
           <Badge variant="secondary" className="border border-border">
             <ShieldCheck className="h-3 w-3 me-1" />Admin
           </Badge>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
 
             {/* ── Create user ──────────────────────────────────────────── */}
             <div className="rounded-lg border border-border bg-card p-5">
               <h2 className="text-base font-semibold text-foreground mb-4">Create New User</h2>
               <form onSubmit={createUser} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="new-username">Username</Label>
                     <Input id="new-username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)}

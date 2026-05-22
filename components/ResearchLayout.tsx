@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Zap, Plus, ShieldCheck, Trash2, MessageSquare,
   ExternalLink, Phone, MapPin, Star, IndianRupee, ImageOff,
-  Copy, Download, Check,
+  Copy, Download, Check, Menu, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,8 +44,8 @@ interface SessionDetail {
 
 // ── Date grouping ─────────────────────────────────────────────────────────────
 function groupByDate(sessions: SessionSummary[]) {
-  const now  = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const now       = new Date();
+  const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterday = today - 86400000;
   const week      = today - 6 * 86400000;
 
@@ -55,7 +55,7 @@ function groupByDate(sessions: SessionSummary[]) {
 
   sessions.forEach((s) => {
     const t = new Date(s.createdAt).getTime();
-    if (t >= today)         groups["Today"].push(s);
+    if (t >= today)          groups["Today"].push(s);
     else if (t >= yesterday) groups["Yesterday"].push(s);
     else if (t >= week)      groups["Last 7 Days"].push(s);
     else                     groups["Older"].push(s);
@@ -64,14 +64,15 @@ function groupByDate(sessions: SessionSummary[]) {
   return Object.entries(groups).filter(([, items]) => items.length > 0);
 }
 
-// ── Listing card (for past-session view) ─────────────────────────────────────
+// ── Listing card ──────────────────────────────────────────────────────────────
 function ListingCard({ listing }: { listing: ExtractedListing }) {
   const [failed, setFailed] = useState(false);
   return (
     <div className="rounded-lg border border-border bg-background overflow-hidden flex flex-col">
       {listing.image && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={listing.image} alt={listing.name} className="h-36 w-full object-cover" onError={() => setFailed(true)} />
+        <img src={listing.image} alt={listing.name} className="h-36 w-full object-cover"
+          onError={() => setFailed(true)} />
       ) : (
         <div className="h-36 w-full bg-secondary flex items-center justify-center">
           <ImageOff className="h-6 w-6 text-muted-foreground/30" />
@@ -92,7 +93,8 @@ function ListingCard({ listing }: { listing: ExtractedListing }) {
         )}
         {listing.address && (
           <span className="inline-flex items-start gap-1 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span className="line-clamp-2">{listing.address}</span>
+            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+            <span className="line-clamp-2">{listing.address}</span>
           </span>
         )}
         <div className="mt-auto pt-2 border-t border-border">
@@ -149,7 +151,7 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
   };
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto space-y-4 p-6">
+    <div className="max-w-3xl mx-auto space-y-4 p-4 sm:p-6">
       <Skeleton className="h-7 w-2/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
@@ -165,10 +167,12 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl mx-auto p-6 space-y-6">
+      <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
         {/* Query title */}
-        <div className="flex items-start justify-between gap-4">
-          <h2 className="text-xl font-semibold text-foreground leading-snug">{session.query}</h2>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-snug flex-1">
+            {session.query}
+          </h2>
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={copy} className="gap-1.5 h-8 text-xs">
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -188,7 +192,7 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
                 {session.listings.length} Listings Extracted
               </p>
             </div>
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {session.listings.map((l, i) => <ListingCard key={i} listing={l} />)}
             </div>
           </div>
@@ -197,19 +201,19 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
         {/* Report */}
         {session.report && (
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="px-5 py-4">
+            <div className="px-4 sm:px-5 py-4">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  h1: ({ children }) => <h1 className="text-2xl font-semibold text-foreground mb-4 mt-0 pb-2 border-b border-border">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-3 mt-6">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-base font-semibold text-foreground mb-2 mt-4">{children}</h3>,
+                  h1: ({ children }) => <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-4 mt-0 pb-2 border-b border-border">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 mt-6">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm sm:text-base font-semibold text-foreground mb-2 mt-4">{children}</h3>,
                   p:  ({ children }) => <p className="text-sm text-foreground mb-3 leading-relaxed">{children}</p>,
                   ul: ({ children }) => <ul className="list-disc ps-5 mb-3 space-y-1 text-sm">{children}</ul>,
                   ol: ({ children }) => <ol className="list-decimal ps-5 mb-3 space-y-1 text-sm">{children}</ol>,
                   li: ({ children }) => <li className="text-sm text-foreground leading-relaxed">{children}</li>,
                   strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-                  a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 text-sm">{children}</a>,
+                  a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 text-sm break-all">{children}</a>,
                   blockquote: ({ children }) => <blockquote className="border-s-2 border-border ps-4 text-muted-foreground italic my-3 text-sm">{children}</blockquote>,
                   hr: () => <hr className="border-border my-4" />,
                   table: ({ children }) => (
@@ -220,8 +224,8 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
                   thead: ({ children }) => <thead className="bg-secondary/60 border-b border-border">{children}</thead>,
                   tbody: ({ children }) => <tbody className="divide-y divide-border">{children}</tbody>,
                   tr:   ({ children }) => <tr className="hover:bg-secondary/30 transition-colors">{children}</tr>,
-                  th:   ({ children }) => <th className="px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{children}</th>,
-                  td:   ({ children }) => <td className="px-4 py-3 align-top text-sm text-foreground">{children}</td>,
+                  th:   ({ children }) => <th className="px-3 sm:px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{children}</th>,
+                  td:   ({ children }) => <td className="px-3 sm:px-4 py-3 align-top text-sm text-foreground">{children}</td>,
                 }}
               >
                 {session.report.content}
@@ -232,7 +236,7 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
 
         {/* Sources */}
         {session.sources.length > 0 && (
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Sources ({session.sources.length})
             </p>
@@ -256,23 +260,141 @@ function SessionViewer({ sessionId }: { sessionId: string }) {
   );
 }
 
-// ── Main layout ───────────────────────────────────────────────────────────────
-interface Props {
-  username: string;
+// ── Sidebar content (shared between desktop & mobile drawer) ──────────────────
+function SidebarContent({
+  role, sessions, loadingSidebar, activeId, hoveredId,
+  setHoveredId, onSessionClick, onNewResearch, onDelete, username,
+}: {
   role: string;
+  sessions: SessionSummary[];
+  loadingSidebar: boolean;
+  activeId: string | null;
+  hoveredId: string | null;
+  setHoveredId: (id: string | null) => void;
+  onSessionClick: (id: string) => void;
+  onNewResearch: () => void;
+  onDelete: (e: React.MouseEvent, id: string) => void;
+  username: string;
+}) {
+  const { isResearching, report } = useResearchStore();
+  const showingNewResearch = !activeId;
+  const groups = groupByDate(sessions);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="h-14 flex items-center px-4 gap-2 shrink-0">
+        <div className="h-6 w-6 rounded-md bg-foreground flex items-center justify-center">
+          <Zap className="h-3.5 w-3.5 text-background" />
+        </div>
+        <span className="text-sm font-semibold text-foreground">Research Agent</span>
+      </div>
+
+      {/* New Research */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={onNewResearch}
+          className={cn(
+            "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors",
+            showingNewResearch && !isResearching && !report
+              ? "bg-secondary text-foreground border border-border"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+          )}
+        >
+          <Plus className="h-4 w-4 shrink-0" />
+          New Research
+        </button>
+      </div>
+
+      {/* Admin link */}
+      {role === "admin" && (
+        <div className="px-3 pb-2">
+          <Link href="/admin"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+            <ShieldCheck className="h-4 w-4 shrink-0" />
+            User Management
+          </Link>
+        </div>
+      )}
+
+      {/* Session list */}
+      <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-4">
+        {loadingSidebar ? (
+          <div className="space-y-1 pt-2">
+            {[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-8 w-full rounded-lg" />)}
+          </div>
+        ) : groups.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+            <MessageSquare className="h-8 w-8 text-muted-foreground/30" />
+            <p className="text-xs text-muted-foreground">No research yet</p>
+          </div>
+        ) : (
+          groups.map(([label, items]) => (
+            <div key={label}>
+              <p className="text-xs font-semibold text-muted-foreground px-2 mb-1">{label}</p>
+              <div className="space-y-0.5">
+                {items.map((session) => (
+                  <div
+                    key={session.id}
+                    onClick={() => onSessionClick(session.id)}
+                    onMouseEnter={() => setHoveredId(session.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    className={cn(
+                      "group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
+                      activeId === session.id
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                    )}
+                  >
+                    <p className="text-sm leading-snug line-clamp-1 flex-1 pe-6">
+                      {session.query}
+                    </p>
+                    {role === "admin" && session.user?.username && (
+                      <span className="absolute end-6 text-[10px] text-muted-foreground/60 hidden group-hover:block truncate max-w-[60px]">
+                        {session.user.username}
+                      </span>
+                    )}
+                    {hoveredId === session.id && (
+                      <button
+                        onClick={(e) => onDelete(e, session.id)}
+                        className="absolute end-2 p-1 rounded hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* User menu + credit */}
+      <div className="border-t border-border p-3 space-y-2">
+        <UserMenu username={username} role={role} />
+        <p className="text-[10px] text-muted-foreground/50 text-center leading-snug px-1">
+          Developed by <span className="text-muted-foreground/80 font-medium">Yogesh Mahawar</span>
+        </p>
+      </div>
+    </div>
+  );
 }
 
+// ── Main layout ───────────────────────────────────────────────────────────────
+interface Props { username: string; role: string; }
+
 export function ResearchLayout({ username, role }: Props) {
-  const { isResearching, report, startResearch: storeStart } = useResearchStore();
+  const { isResearching, report } = useResearchStore();
   const store = useResearchStore();
 
-  const [sessions, setSessions]       = useState<SessionSummary[]>([]);
+  const [sessions, setSessions]           = useState<SessionSummary[]>([]);
   const [loadingSidebar, setLoadingSidebar] = useState(true);
-  const [activeId, setActiveId]       = useState<string | null>(null);
-  const [hoveredId, setHoveredId]     = useState<string | null>(null);
-  const prevReportRef                 = useRef("");
+  const [activeId, setActiveId]           = useState<string | null>(null);
+  const [hoveredId, setHoveredId]         = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen]     = useState(false);
+  const prevReportRef                     = useRef("");
 
-  // Fetch sidebar list
   const loadSessions = async () => {
     try {
       const res  = await fetch("/api/history");
@@ -284,17 +406,23 @@ export function ResearchLayout({ username, role }: Props) {
 
   useEffect(() => { loadSessions(); }, []);
 
-  // When a new report finishes streaming → add it to the top of sidebar
   useEffect(() => {
     if (!isResearching && report && report !== prevReportRef.current) {
       prevReportRef.current = report;
-      loadSessions(); // refresh sidebar to include the just-saved session
+      loadSessions();
     }
   }, [isResearching, report]);
 
   const handleNewResearch = () => {
     store.resetResearch();
     setActiveId(null);
+    setSidebarOpen(false);
+  };
+
+  const handleSessionClick = (id: string) => {
+    setActiveId(id);
+    store.resetResearch();
+    setSidebarOpen(false); // close drawer on mobile after selection
   };
 
   const deleteSession = async (e: React.MouseEvent, id: string) => {
@@ -305,124 +433,55 @@ export function ResearchLayout({ username, role }: Props) {
     toast.success("Deleted", { action: { label: "Refresh", onClick: loadSessions } });
   };
 
-  const groups = groupByDate(sessions);
-
-  // Decide what the main area shows
-  const showingNewResearch = !activeId;
+  const sidebarProps = {
+    role, sessions, loadingSidebar, activeId, hoveredId,
+    setHoveredId, onSessionClick: handleSessionClick,
+    onNewResearch: handleNewResearch, onDelete: deleteSession, username,
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className="w-64 shrink-0 border-e border-border flex flex-col bg-card">
+      {/* ── Desktop sidebar (md+) ─────────────────────────────────────────── */}
+      <aside className="hidden md:flex md:w-64 shrink-0 border-e border-border flex-col bg-card">
+        <SidebarContent {...sidebarProps} />
+      </aside>
 
-        {/* Logo */}
-        <div className="h-14 flex items-center px-4 gap-2 shrink-0">
-          <div className="h-6 w-6 rounded-md bg-foreground flex items-center justify-center">
-            <Zap className="h-3.5 w-3.5 text-background" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">Research Agent</span>
+      {/* ── Mobile drawer overlay ─────────────────────────────────────────── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={cn(
+        "fixed inset-y-0 start-0 z-50 w-72 bg-card border-e border-border flex flex-col transition-transform duration-300 md:hidden",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        {/* Close button inside drawer */}
+        <div className="absolute top-3 end-3">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-
-        {/* New Research button */}
-        <div className="px-3 pb-2">
-          <button
-            onClick={handleNewResearch}
-            className={cn(
-              "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
-              showingNewResearch && !isResearching && !report
-                ? "bg-secondary text-foreground border border-border"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            <Plus className="h-4 w-4 shrink-0" />
-            New Research
-          </button>
-        </div>
-
-        {/* Admin link */}
-        {role === "admin" && (
-          <div className="px-3 pb-2">
-            <Link href="/admin"
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
-              <ShieldCheck className="h-4 w-4 shrink-0" />
-              User Management
-            </Link>
-          </div>
-        )}
-
-        {/* Session list */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-4">
-          {loadingSidebar ? (
-            <div className="space-y-1 pt-2">
-              {[1,2,3,4,5].map((i) => (
-                <Skeleton key={i} className="h-8 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : groups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-              <MessageSquare className="h-8 w-8 text-muted-foreground/30" />
-              <p className="text-xs text-muted-foreground">No research yet</p>
-            </div>
-          ) : (
-            groups.map(([label, items]) => (
-              <div key={label}>
-                <p className="text-xs font-semibold text-muted-foreground px-2 mb-1">{label}</p>
-                <div className="space-y-0.5">
-                  {items.map((session) => (
-                    <div
-                      key={session.id}
-                      onClick={() => { setActiveId(session.id); store.resetResearch(); }}
-                      onMouseEnter={() => setHoveredId(session.id)}
-                      onMouseLeave={() => setHoveredId(null)}
-                      className={cn(
-                        "group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors",
-                        activeId === session.id
-                          ? "bg-secondary text-foreground"
-                          : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
-                      )}
-                    >
-                      <p className="text-sm leading-snug line-clamp-1 flex-1 pe-5">
-                        {session.query}
-                      </p>
-                      {/* Admin label */}
-                      {role === "admin" && session.user?.username && (
-                        <span className="absolute end-6 text-[10px] text-muted-foreground/60 hidden group-hover:block truncate max-w-[60px]">
-                          {session.user.username}
-                        </span>
-                      )}
-                      {/* Delete on hover */}
-                      {hoveredId === session.id && (
-                        <button
-                          onClick={(e) => deleteSession(e, session.id)}
-                          className="absolute end-2 p-1 rounded hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* User menu + credit */}
-        <div className="border-t border-border p-3 space-y-2">
-          <UserMenu username={username} role={role} />
-          <p className="text-[10px] text-muted-foreground/50 text-center leading-snug px-1">
-            Developed by <span className="text-muted-foreground/80 font-medium">Yogesh Mahawar</span>
-          </p>
-        </div>
+        <SidebarContent {...sidebarProps} />
       </aside>
 
       {/* ── Main content ─────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Topbar */}
-        <header className="h-14 shrink-0 border-b border-border flex items-center px-6">
-          <h1 className="text-base font-semibold text-foreground">
+        <header className="h-14 shrink-0 border-b border-border flex items-center px-4 gap-3">
+          {/* Hamburger — mobile only */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden shrink-0"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h1 className="text-base font-semibold text-foreground truncate">
             {activeId ? "Research" : "New Research"}
           </h1>
         </header>
@@ -431,10 +490,10 @@ export function ResearchLayout({ username, role }: Props) {
         {activeId ? (
           <SessionViewer sessionId={activeId} />
         ) : (
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl mx-auto space-y-6">
-              <div className="rounded-lg border border-border bg-card p-5">
-                <h2 className="text-lg font-semibold text-foreground mb-1">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+            <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
+              <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+                <h2 className="text-base sm:text-lg font-semibold text-foreground mb-1">
                   What do you want to research?
                 </h2>
                 <p className="text-sm text-muted-foreground mb-4">
