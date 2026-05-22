@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
       send({ type: "agent_start", agent: "orchestrator", message: session.id } as SSEMessage & { message: string });
 
       try {
-        const report = await runResearch(query.trim(), send);
+        const { report, listings } = await runResearch(query.trim(), send);
 
-        // Save report and update session
+        // Save report, listings, and update session status
         await prisma.researchSession.update({
           where: { id: session.id },
           data: { status: "completed" },
@@ -42,6 +42,22 @@ export async function POST(req: NextRequest) {
         if (report) {
           await prisma.report.create({
             data: { content: report, sessionId: session.id },
+          });
+        }
+
+        if (listings.length > 0) {
+          await prisma.listing.createMany({
+            data: listings.map((l) => ({
+              name:      l.name,
+              price:     l.price     ?? null,
+              phone:     l.phone     ?? null,
+              address:   l.address   ?? null,
+              rating:    l.rating    ?? null,
+              website:   l.website   ?? null,
+              image:     l.image     ?? null,
+              notes:     l.notes     ?? null,
+              sessionId: session.id,
+            })),
           });
         }
       } catch (err) {
