@@ -6,8 +6,9 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     take: 20,
     include: {
-      report: { select: { content: true } },
-      sources: { select: { title: true, url: true, snippet: true } },
+      report:   { select: { content: true } },
+      sources:  { select: { title: true, url: true, snippet: true } },
+      listings: { select: { name: true, price: true, phone: true, address: true, rating: true, website: true, image: true, notes: true } },
     },
   });
 

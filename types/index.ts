@@ -93,4 +93,5 @@ export interface ResearchSession {
   createdAt: string;
   report?: { content: string };
   sources: ResearchSource[];
+  listings: ExtractedListing[];
 }

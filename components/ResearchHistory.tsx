@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Clock, Trash2, ChevronDown, ChevronUp,
   ExternalLink, Download, Copy, Check,
+  Phone, MapPin, Star, IndianRupee, ImageOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,62 @@ function HistoryReportActions({ report, query }: { report: string; query: string
   );
 }
 
+// ── Listing image card (inline, no external component dep) ───────────────────
+function ListingCard({ listing }: { listing: ResearchSession["listings"][number] }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden flex flex-col">
+      {listing.image && !imgFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={listing.image} alt={listing.name}
+          className="h-36 w-full object-cover"
+          onError={() => setImgFailed(true)} />
+      ) : (
+        <div className="h-36 w-full bg-secondary flex items-center justify-center">
+          <ImageOff className="h-6 w-6 text-muted-foreground/30" />
+        </div>
+      )}
+      <div className="p-3 flex flex-col gap-1.5 flex-1">
+        <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{listing.name}</p>
+        {listing.price && (
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-700">
+            <IndianRupee className="h-3.5 w-3.5 shrink-0" />
+            {listing.price.replace("₹", "").replace("Rs", "").trim()}
+          </span>
+        )}
+        {listing.rating && (
+          <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+            {listing.rating}
+          </span>
+        )}
+        {listing.address && (
+          <span className="inline-flex items-start gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+            <span className="line-clamp-2">{listing.address}</span>
+          </span>
+        )}
+        <div className="mt-auto pt-2 border-t border-border">
+          {listing.phone ? (
+            <a href={`tel:${listing.phone.replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+              <Phone className="h-3 w-3 shrink-0" />{listing.phone}
+            </a>
+          ) : listing.website ? (
+            <a href={listing.website} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-secondary hover:bg-secondary/80 text-foreground font-medium transition-colors">
+              <ExternalLink className="h-3 w-3 shrink-0" />Book Online
+            </a>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">Contact not available</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Full report rendered with ReactMarkdown ───────────────────────────────────
 function FullReport({ session }: { session: ResearchSession }) {
   if (!session.report) {
@@ -70,6 +127,20 @@ function FullReport({ session }: { session: ResearchSession }) {
         </p>
         <HistoryReportActions report={session.report.content} query={session.query} />
       </div>
+
+      {/* Listing cards — only shown if this was a listing query */}
+      {session.listings.length > 0 && (
+        <div className="px-5 py-4 border-b border-border">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            {session.listings.length} listing{session.listings.length !== 1 ? "s" : ""} extracted
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {session.listings.map((listing, i) => (
+              <ListingCard key={i} listing={listing} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Rendered markdown — same styling as StreamingReport */}
       <div className="px-5 py-5 max-w-none text-foreground space-y-1">
