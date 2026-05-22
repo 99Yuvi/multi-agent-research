@@ -10,6 +10,7 @@ import {
   FileText,
   BarChart3,
   PenLine,
+  TableProperties,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { AgentName } from "@/types";
@@ -18,6 +19,7 @@ const AGENT_ICONS: Record<AgentName, LucideIcon> = {
   orchestrator: BrainCircuit,
   search: Search,
   scraper: Globe,
+  extractor: TableProperties,
   summarizer: FileText,
   analyst: BarChart3,
   report_writer: PenLine,

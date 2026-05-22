@@ -1,31 +1,29 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getAIClient, MODELS, calcCost } from "@/lib/ai-client";
+import type { ModelUsage } from "@/types";
 
 type AnalysisType = "trends" | "key_points" | "sentiment" | "comparison";
+
+const MODEL = MODELS.analyst;
 
 export async function analystAgent(
   content: string,
   analysisType: AnalysisType = "key_points"
-): Promise<string> {
+): Promise<{ text: string; usage: ModelUsage }> {
+  const openai = getAIClient();
+
   const prompts: Record<AnalysisType, string> = {
-    trends:
-      "Identify and explain the main trends and patterns in the following content. What is changing, growing, or declining?",
-    key_points:
-      "Extract the most important key points, facts, and insights from the following content.",
-    sentiment:
-      "Analyze the overall sentiment and tone of the following content. What are the main positive and negative aspects?",
-    comparison:
-      "Compare and contrast the different perspectives and viewpoints present in the following content.",
+    trends: "Identify and explain the main trends and patterns. What is changing, growing, or declining?",
+    key_points: "Extract the most important key points, facts, and insights.",
+    sentiment: "Analyze the overall sentiment and tone. What are the main positive and negative aspects?",
+    comparison: "Compare and contrast the different perspectives and viewpoints.",
   };
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
       {
         role: "system",
-        content:
-          "You are an expert research analyst. Provide clear, structured analysis. Use markdown formatting where helpful.",
+        content: "You are an expert research analyst. Provide clear, structured analysis. Use markdown formatting where helpful.",
       },
       {
         role: "user",
@@ -36,5 +34,15 @@ export async function analystAgent(
     temperature: 0.4,
   });
 
-  return response.choices[0]?.message?.content || "Could not analyze.";
+  const u = response.usage!;
+  return {
+    text: response.choices[0]?.message?.content || "Could not analyze.",
+    usage: {
+      model: MODEL,
+      promptTokens: u.prompt_tokens,
+      completionTokens: u.completion_tokens,
+      totalTokens: u.total_tokens,
+      costUsd: calcCost(MODEL, u.prompt_tokens, u.completion_tokens),
+    },
+  };
 }

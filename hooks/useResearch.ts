@@ -87,10 +87,23 @@ export function useResearch() {
         }
         break;
 
+      case "listings":
+        if (msg.listings) {
+          store.setListings(msg.listings);
+        }
+        break;
+
+      case "token_usage":
+        if (msg.tokenUsage) {
+          store.setTokenUsage(msg.tokenUsage);
+        }
+        break;
+
       case "complete":
         store.setComplete(
           msg.report || store.report,
-          msg.sources || []
+          msg.sources || [],
+          msg.tokenUsage
         );
         break;
 

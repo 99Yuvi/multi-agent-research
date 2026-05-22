@@ -1,11 +1,14 @@
-import OpenAI from "openai";
+import { getAIClient, MODELS, calcCost } from "@/lib/ai-client";
+import type { ModelUsage } from "@/types";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const MODEL = MODELS.summarizer;
 
 export async function summarizerAgent(
   content: string,
   style: "brief" | "detailed" | "bullet-points" = "detailed"
-): Promise<string> {
+): Promise<{ text: string; usage: ModelUsage }> {
+  const openai = getAIClient();
+
   const styleInstructions = {
     brief: "Write a 2-3 sentence summary.",
     detailed: "Write a thorough 2-3 paragraph summary.",
@@ -13,7 +16,7 @@ export async function summarizerAgent(
   };
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
       {
         role: "system",
@@ -28,5 +31,15 @@ export async function summarizerAgent(
     temperature: 0.3,
   });
 
-  return response.choices[0]?.message?.content || "Could not summarize.";
+  const u = response.usage!;
+  return {
+    text: response.choices[0]?.message?.content || "Could not summarize.",
+    usage: {
+      model: MODEL,
+      promptTokens: u.prompt_tokens,
+      completionTokens: u.completion_tokens,
+      totalTokens: u.total_tokens,
+      costUsd: calcCost(MODEL, u.prompt_tokens, u.completion_tokens),
+    },
+  };
 }

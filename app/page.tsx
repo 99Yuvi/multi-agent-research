@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { ResearchInput } from "@/components/ResearchInput";
 import { AgentActivityPanel } from "@/components/AgentActivityPanel";
 import { StreamingReport } from "@/components/StreamingReport";
+import { TokenUsagePanel } from "@/components/TokenUsagePanel";
+import { HowItWorks } from "@/components/HowItWorks";
+import { ListingsPanel } from "@/components/ListingsPanel";
 
 export default function Home() {
   return (
@@ -71,8 +74,17 @@ export default function Home() {
               <ResearchInput />
             </div>
 
+            {/* How it works — visible only on empty state */}
+            <HowItWorks />
+
             {/* Agent activity */}
             <AgentActivityPanel />
+
+            {/* Listing image cards — only for hotel/place queries */}
+            <ListingsPanel />
+
+            {/* Token usage */}
+            <TokenUsagePanel />
 
             {/* Report */}
             <StreamingReport />

@@ -45,13 +45,14 @@ export const AGENT_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "summarize",
-      description: "Summarize a piece of text content.",
+      // Content is fetched server-side from the scraped URL — pass only the url and style.
+      description: "Summarize the scraped content from a URL. Pass the url you scraped earlier.",
       parameters: {
         type: "object",
         properties: {
-          content: {
+          url: {
             type: "string",
-            description: "The text content to summarize",
+            description: "The URL whose content should be summarized",
           },
           style: {
             type: "string",
@@ -59,7 +60,7 @@ export const AGENT_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
             description: "The style of summary to produce",
           },
         },
-        required: ["content", "style"],
+        required: ["url", "style"],
       },
     },
   },
@@ -67,22 +68,18 @@ export const AGENT_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "analyze",
-      description:
-        "Analyze content to extract trends, key insights, or sentiment.",
+      // Analysis runs on all summaries stored server-side — no content arg needed.
+      description: "Analyze all collected summaries to extract key insights. Call this once after all summarize calls are done.",
       parameters: {
         type: "object",
         properties: {
-          content: {
-            type: "string",
-            description: "The content to analyze",
-          },
           analysis_type: {
             type: "string",
             enum: ["trends", "key_points", "sentiment", "comparison"],
             description: "The type of analysis to perform",
           },
         },
-        required: ["content", "analysis_type"],
+        required: ["analysis_type"],
       },
     },
   },
@@ -90,37 +87,19 @@ export const AGENT_TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "generate_report",
+      // Summaries and analysis are stored server-side — LLM only passes topic.
+      // This prevents large JSON in tool call args which causes Groq 400 errors.
       description:
-        "Generate a comprehensive, well-structured research report from all gathered data.",
+        "Signal that all research is complete and the final report should be generated. Call this after summarize and analyze are done.",
       parameters: {
         type: "object",
         properties: {
           topic: {
             type: "string",
-            description: "The research topic",
-          },
-          summaries: {
-            type: "array",
-            items: { type: "string" },
-            description: "Array of content summaries from different sources",
-          },
-          analysis: {
-            type: "string",
-            description: "The analysis and insights extracted",
-          },
-          sources: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                url: { type: "string" },
-              },
-            },
-            description: "List of sources used",
+            description: "The research topic being reported on",
           },
         },
-        required: ["topic", "summaries", "analysis", "sources"],
+        required: ["topic"],
       },
     },
   },

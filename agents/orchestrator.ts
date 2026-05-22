@@ -1,172 +1,151 @@
-import OpenAI from "openai";
-import { AGENT_TOOLS } from "./tools";
+/**
+ * Deterministic Research Orchestrator
+ *
+ * Pipeline:
+ *   1. Search  →  2. Scrape  →  3. Extract (if listing query)
+ *   →  4. Summarize  →  5. Analyze  →  6. Report
+ */
+
 import { searchAgent } from "./search-agent";
 import { scraperAgent } from "./scraper-agent";
 import { summarizerAgent } from "./summarizer-agent";
 import { analystAgent } from "./analyst-agent";
 import { reportWriterAgent } from "./report-writer-agent";
-import type { AgentName, SSEMessage, ResearchSource } from "@/types";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { extractorAgent, isListingQuery } from "./extractor-agent";
+import { IS_GROQ } from "@/lib/ai-client";
+import type { AgentName, SSEMessage, ResearchSource, ModelUsage, TokenUsage } from "@/types";
 
 type SendFn = (msg: SSEMessage) => void;
+
+function buildTokenUsage(breakdown: ModelUsage[]): TokenUsage {
+  const totalTokens = breakdown.reduce((s, m) => s + m.totalTokens, 0);
+  const totalCostUsd = breakdown.reduce((s, m) => s + m.costUsd, 0);
+  return { breakdown, totalTokens, totalCostUsd };
+}
+
+function logUsage(label: string, usage: ModelUsage) {
+  const provider = IS_GROQ ? "groq" : "openai";
+  console.log(
+    `[TOKEN][${provider}] ${label.padEnd(14)} | model=${usage.model.padEnd(26)} | ` +
+    `in=${String(usage.promptTokens).padStart(5)} | ` +
+    `out=${String(usage.completionTokens).padStart(5)} | ` +
+    `total=${String(usage.totalTokens).padStart(6)} | ` +
+    `cost=$${usage.costUsd.toFixed(5)}`
+  );
+}
+
 
 export async function runResearch(query: string, send: SendFn): Promise<string> {
   const sources: ResearchSource[] = [];
   const summaries: string[] = [];
-  let analysisResult = "";
+  const allUsage: ModelUsage[] = [];
+  const listingMode = isListingQuery(query);
 
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    {
-      role: "system",
-      content: `You are an expert research orchestrator. When given a research query, you:
-1. Search for relevant information using the search tool (2-3 searches)
-2. Scrape the top 3-4 most relevant URLs for detailed content
-3. Summarize each scraped page with style "detailed"
-4. Analyze all summaries combined with analysis_type "key_points"
-5. Generate a comprehensive research report
+  const agentSend = (agent: AgentName, status: "start" | "done", message?: string) => {
+    send({ type: status === "start" ? "agent_start" : "agent_done", agent, message });
+  };
 
-Always complete all 5 steps in order. Be thorough but efficient.`,
-    },
-    { role: "user", content: `Research this topic thoroughly: "${query}"` },
-  ];
+  const pushUsage = (label: string, usage: ModelUsage) => {
+    allUsage.push(usage);
+    logUsage(label, usage);
+    send({ type: "token_usage", tokenUsage: buildTokenUsage([...allUsage]) });
+  };
 
-  send({ type: "agent_start", agent: "orchestrator", message: "Planning research strategy..." });
+  // ── STEP 1: SEARCH ──────────────────────────────────────────────────────────
+  agentSend("orchestrator", "start", "Planning research strategy...");
 
-  let iterations = 0;
-  const MAX_ITERATIONS = 20;
+  // Listing queries get a contact-focused search term added
+  const searchQueries = listingMode
+    ? [query, `${query} contact phone number address`]
+    : [query, `${query} complete guide`];
 
-  while (iterations < MAX_ITERATIONS) {
-    iterations++;
+  const urlsSeen = new Set<string>();
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      tools: AGENT_TOOLS,
-      tool_choice: "auto",
-      messages,
-      max_tokens: 1000,
+  for (const q of searchQueries) {
+    agentSend("search", "start", `Searching: "${q}"`);
+    const result = await searchAgent(q, 5);
+    result.results.forEach((r) => {
+      if (!urlsSeen.has(r.url)) {
+        urlsSeen.add(r.url);
+        sources.push({ title: r.title, url: r.url, snippet: r.snippet });
+      }
     });
+    agentSend("search", "done", `Found ${result.results.length} results`);
+  }
 
-    const choice = response.choices[0];
-    const msg = choice.message;
+  agentSend("orchestrator", "done");
 
-    messages.push(msg);
+  // ── STEP 2: SCRAPE top URLs ─────────────────────────────────────────────────
+  const urlsToScrape = sources.slice(0, 4);
+  const scrapedContents: Array<{ url: string; content: string; images: string[] }> = [];
 
-    // If no tool calls, orchestrator is done
-    if (!msg.tool_calls || msg.tool_calls.length === 0) {
-      send({ type: "agent_done", agent: "orchestrator" });
-
-      // Return the final text if any
-      return msg.content || "";
+  for (const source of urlsToScrape) {
+    agentSend("scraper", "start", `Reading: ${source.url}`);
+    const scraped = await scraperAgent(source.url);
+    if (scraped.wordCount > 50) {
+      scrapedContents.push({ url: source.url, content: scraped.content, images: scraped.images });
     }
+    agentSend("scraper", "done", `Read ${scraped.wordCount} words`);
+  }
 
-    // Process each tool call
-    for (const toolCall of msg.tool_calls) {
-      if (toolCall.type !== "function") continue;
-      const toolName = toolCall.function.name;
-      let args: Record<string, unknown>;
+  // ── STEP 3: EXTRACT LISTINGS (only for listing queries) ────────────────────
+  if (listingMode && scrapedContents.length > 0) {
+    agentSend("extractor", "start", "Extracting names, prices & contacts...");
+    const { listings, usage } = await extractorAgent(scrapedContents, query);
+    pushUsage("extractor", usage);
+    agentSend("extractor", "done", `Found ${listings.length} listings`);
 
-      try {
-        args = JSON.parse(toolCall.function.arguments);
-      } catch {
-        args = {};
-      }
-
-      let result: unknown;
-
-      if (toolName === "search") {
-        const agentLabel = "search" as AgentName;
-        send({ type: "agent_start", agent: agentLabel, message: `Searching: "${args.query}"` });
-
-        const searchResult = await searchAgent(
-          args.query as string,
-          (args.max_results as number) || 5
-        );
-
-        // Collect sources
-        searchResult.results.forEach((r) => {
-          if (!sources.find((s) => s.url === r.url)) {
-            sources.push({ title: r.title, url: r.url, snippet: r.snippet });
-          }
-        });
-
-        result = searchResult;
-        send({ type: "agent_done", agent: agentLabel, message: `Found ${searchResult.results.length} results` });
-
-      } else if (toolName === "scrape_url") {
-        const agentLabel = "scraper" as AgentName;
-        send({ type: "agent_start", agent: agentLabel, message: `Reading: ${args.url}` });
-
-        const scraped = await scraperAgent(args.url as string);
-        result = scraped;
-
-        send({ type: "agent_done", agent: agentLabel, message: `Read ${scraped.wordCount} words` });
-
-      } else if (toolName === "summarize") {
-        const agentLabel = "summarizer" as AgentName;
-        send({ type: "agent_start", agent: agentLabel, message: "Summarizing content..." });
-
-        const summary = await summarizerAgent(
-          args.content as string,
-          (args.style as "brief" | "detailed" | "bullet-points") || "detailed"
-        );
-        summaries.push(summary);
-        result = summary;
-
-        send({ type: "agent_done", agent: agentLabel });
-
-      } else if (toolName === "analyze") {
-        const agentLabel = "analyst" as AgentName;
-        send({ type: "agent_start", agent: agentLabel, message: "Analyzing insights..." });
-
-        const analysis = await analystAgent(
-          args.content as string,
-          (args.analysis_type as "trends" | "key_points" | "sentiment" | "comparison") || "key_points"
-        );
-        analysisResult = analysis;
-        result = analysis;
-
-        send({ type: "agent_done", agent: agentLabel });
-
-      } else if (toolName === "generate_report") {
-        const agentLabel = "report_writer" as AgentName;
-        send({ type: "agent_start", agent: agentLabel, message: "Writing research report..." });
-
-        const report = await reportWriterAgent({
-          topic: (args.topic as string) || query,
-          summaries: (args.summaries as string[]) || summaries,
-          analysis: (args.analysis as string) || analysisResult,
-          sources: (args.sources as ResearchSource[]) || sources,
-        });
-
-        // Stream the report in chunks
-        const words = report.split(" ");
-        for (let i = 0; i < words.length; i += 8) {
-          const chunk = words.slice(i, i + 8).join(" ") + (i + 8 < words.length ? " " : "");
-          send({ type: "chunk", content: chunk });
-        }
-
-        result = report;
-        send({
-          type: "complete",
-          report,
-          sources,
-          agent: agentLabel,
-        });
-
-        return report;
-      } else {
-        result = { error: `Unknown tool: ${toolName}` };
-      }
-
-      // Add tool result to messages
-      messages.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(result),
-      });
+    if (listings.length > 0) {
+      console.log(`[EXTRACTOR] Found ${listings.length} listings`);
+      // Send listings as structured data — UI renders them as image cards
+      send({ type: "listings", listings });
     }
   }
 
-  throw new Error("Research exceeded maximum iterations");
+  // ── STEP 4: SUMMARIZE each scraped page ────────────────────────────────────
+  for (const { url, content } of scrapedContents) {
+    agentSend("summarizer", "start", `Summarizing: ${url}`);
+    const { text, usage } = await summarizerAgent(content, "detailed");
+    summaries.push(text);
+    pushUsage("summarizer", usage);
+    agentSend("summarizer", "done");
+  }
+
+  // ── STEP 5: ANALYZE ────────────────────────────────────────────────────────
+  agentSend("analyst", "start", "Analyzing insights...");
+  const combinedSummaries = summaries.join("\n\n---\n\n");
+  const { text: analysis, usage: analysisUsage } = await analystAgent(
+    combinedSummaries,
+    listingMode ? "key_points" : "key_points"
+  );
+  pushUsage("analyst", analysisUsage);
+  agentSend("analyst", "done");
+
+  // ── STEP 6: GENERATE REPORT ────────────────────────────────────────────────
+  agentSend("report_writer", "start", "Writing research report...");
+  const { text: baseReport, usage: reportUsage } = await reportWriterAgent({
+    topic: query,
+    summaries,
+    analysis,
+    sources,
+  });
+  pushUsage("report_writer", reportUsage);
+
+  // Listings are shown as image cards in the UI — no need to duplicate as markdown table
+  const finalReport = baseReport;
+
+  const finalUsage = buildTokenUsage([...allUsage]);
+  console.log("─".repeat(72));
+  console.log(`[TOKEN] TOTAL | tokens=${finalUsage.totalTokens} | cost=$${finalUsage.totalCostUsd.toFixed(5)} | provider=${IS_GROQ ? "groq (FREE)" : "openai"}`);
+  console.log("─".repeat(72));
+
+  // Stream report
+  const words = finalReport.split(" ");
+  for (let i = 0; i < words.length; i += 8) {
+    const chunk = words.slice(i, i + 8).join(" ") + (i + 8 < words.length ? " " : "");
+    send({ type: "chunk", content: chunk });
+  }
+
+  send({ type: "complete", report: finalReport, sources, agent: "report_writer", tokenUsage: finalUsage });
+  return finalReport;
 }

@@ -8,10 +8,10 @@ import { useResearchStore } from "@/store/researchStore";
 import { useResearch } from "@/hooks/useResearch";
 
 const EXAMPLE_QUERIES = [
+  "Budget hotels in Manali with contact details and prices",
   "Latest trends in AI agents 2025",
   "How is generative AI transforming healthcare?",
   "Best practices for building SaaS products",
-  "Impact of climate change on global economy",
 ];
 
 export function ResearchInput() {

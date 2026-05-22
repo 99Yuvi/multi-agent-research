@@ -1,10 +1,11 @@
 import { create } from "zustand";
-import type { AgentName, AgentState, AgentStatus, ResearchSource } from "@/types";
+import type { AgentName, AgentState, AgentStatus, ExtractedListing, ResearchSource, TokenUsage } from "@/types";
 
 const AGENT_LABELS: Record<AgentName, string> = {
   orchestrator: "Orchestrator",
   search: "Search Agent",
   scraper: "Scraper Agent",
+  extractor: "Extractor Agent",
   summarizer: "Summarizer Agent",
   analyst: "Analyst Agent",
   report_writer: "Report Writer",
@@ -14,6 +15,7 @@ const ALL_AGENTS: AgentName[] = [
   "orchestrator",
   "search",
   "scraper",
+  "extractor",
   "summarizer",
   "analyst",
   "report_writer",
@@ -28,26 +30,27 @@ function makeInitialAgents(): AgentState[] {
 }
 
 interface ResearchStore {
-  // Query
   query: string;
   setQuery: (q: string) => void;
 
-  // Research state
   isResearching: boolean;
   sessionId: string | null;
   agents: AgentState[];
   report: string;
   sources: ResearchSource[];
+  listings: ExtractedListing[];
   error: string | null;
+  tokenUsage: TokenUsage | null;
 
-  // Actions
   startResearch: () => void;
   resetResearch: () => void;
   setAgentStatus: (name: AgentName, status: AgentStatus, message?: string) => void;
   appendChunk: (chunk: string) => void;
-  setComplete: (report: string, sources: ResearchSource[]) => void;
+  setComplete: (report: string, sources: ResearchSource[], tokenUsage?: TokenUsage) => void;
   setError: (error: string) => void;
   setSessionId: (id: string) => void;
+  setTokenUsage: (usage: TokenUsage) => void;
+  setListings: (listings: ExtractedListing[]) => void;
 }
 
 export const useResearchStore = create<ResearchStore>((set) => ({
@@ -59,7 +62,9 @@ export const useResearchStore = create<ResearchStore>((set) => ({
   agents: makeInitialAgents(),
   report: "",
   sources: [],
+  listings: [],
   error: null,
+  tokenUsage: null,
 
   startResearch: () =>
     set({
@@ -67,8 +72,10 @@ export const useResearchStore = create<ResearchStore>((set) => ({
       agents: makeInitialAgents(),
       report: "",
       sources: [],
+      listings: [],
       error: null,
       sessionId: null,
+      tokenUsage: null,
     }),
 
   resetResearch: () =>
@@ -77,8 +84,10 @@ export const useResearchStore = create<ResearchStore>((set) => ({
       agents: makeInitialAgents(),
       report: "",
       sources: [],
+      listings: [],
       error: null,
       sessionId: null,
+      tokenUsage: null,
     }),
 
   setAgentStatus: (name, status, message) =>
@@ -91,11 +100,12 @@ export const useResearchStore = create<ResearchStore>((set) => ({
   appendChunk: (chunk) =>
     set((state) => ({ report: state.report + chunk })),
 
-  setComplete: (report, sources) =>
+  setComplete: (report, sources, tokenUsage) =>
     set({
       isResearching: false,
       report,
       sources,
+      tokenUsage: tokenUsage ?? null,
       agents: makeInitialAgents().map((a) => ({ ...a, status: "done" as AgentStatus })),
     }),
 
@@ -103,4 +113,8 @@ export const useResearchStore = create<ResearchStore>((set) => ({
     set({ isResearching: false, error }),
 
   setSessionId: (id) => set({ sessionId: id }),
+
+  setTokenUsage: (usage) => set({ tokenUsage: usage }),
+
+  setListings: (listings) => set({ listings }),
 }));
