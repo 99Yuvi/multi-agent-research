@@ -6,12 +6,23 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id        String            @id @default(cuid())
+  username  String            @unique
+  password  String            // bcrypt hashed
+  role      String            @default("user") // "admin" | "user"
+  createdAt DateTime          @default(now())
+  sessions  ResearchSession[]
+}
+
 model ResearchSession {
   id        String    @id @default(cuid())
   query     String
   status    String    @default("pending") // pending | running | completed | failed
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   report    Report?
   sources   Source[]
   listings  Listing[]

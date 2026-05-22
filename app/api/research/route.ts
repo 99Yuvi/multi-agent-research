@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runResearch } from "@/agents/orchestrator";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import type { SSEMessage } from "@/types";
 
 export const runtime = "nodejs";
@@ -13,9 +14,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Query is required" }, { status: 400 });
   }
 
+  const authSession = await getSession();
+
   // Create session in DB
   const session = await prisma.researchSession.create({
-    data: { query: query.trim(), status: "running" },
+    data: {
+      query: query.trim(),
+      status: "running",
+      userId: authSession?.id ?? null,
+    },
   });
 
   const encoder = new TextEncoder();
