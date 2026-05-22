@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { History, Zap } from "lucide-react";
+import { ArrowLeft, Zap, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ResearchInput } from "@/components/ResearchInput";
-import { AgentActivityPanel } from "@/components/AgentActivityPanel";
-import { StreamingReport } from "@/components/StreamingReport";
+import { ResearchHistory } from "@/components/ResearchHistory";
 
-export default function Home() {
+export default function HistoryPage() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
@@ -20,14 +18,14 @@ export default function Home() {
         <nav className="flex-1 p-3 space-y-1">
           <Link
             href="/"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm bg-secondary text-foreground border border-border"
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             <Zap className="h-4 w-4" />
             New Research
           </Link>
           <Link
             href="/history"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm bg-secondary text-foreground border border-border"
           >
             <History className="h-4 w-4" />
             History
@@ -47,35 +45,17 @@ export default function Home() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 shrink-0 border-b border-border flex items-center px-6 gap-4">
-          <h1 className="text-xl font-semibold text-foreground">Research</h1>
-          <div className="ms-auto">
-            <Link href="/history">
-              <Button variant="outline" size="sm" className="gap-2">
-                <History className="h-4 w-4" />
-                History
-              </Button>
-            </Link>
-          </div>
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="me-2">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <h1 className="text-xl font-semibold text-foreground">Research History</h1>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {/* Input */}
-            <div className="rounded-lg border border-border bg-card p-5">
-              <h2 className="text-lg font-semibold text-foreground mb-1">
-                What do you want to research?
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                AI agents will search the web, read articles, and generate a comprehensive report.
-              </p>
-              <ResearchInput />
-            </div>
-
-            {/* Agent activity */}
-            <AgentActivityPanel />
-
-            {/* Report */}
-            <StreamingReport />
+          <div className="max-w-3xl mx-auto">
+            <ResearchHistory />
           </div>
         </main>
       </div>

@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model ResearchSession {
+  id        String   @id @default(cuid())
+  query     String
+  status    String   @default("pending") // pending | running | completed | failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  report    Report?
+  sources   Source[]
+}
+
+model Report {
+  id        String          @id @default(cuid())
+  content   String
+  format    String          @default("markdown")
+  sessionId String          @unique
+  session   ResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+}
+
+model Source {
+  id        String          @id @default(cuid())
+  title     String
+  url       String
+  snippet   String?
+  sessionId String
+  session   ResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+}
