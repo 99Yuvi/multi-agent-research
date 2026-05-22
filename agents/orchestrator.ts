@@ -35,10 +35,14 @@ function logUsage(label: string, usage: ModelUsage) {
 }
 
 
-export async function runResearch(query: string, send: SendFn): Promise<string> {
+export async function runResearch(
+  query: string,
+  send: SendFn
+): Promise<{ report: string; listings: import("@/types").ExtractedListing[] }> {
   const sources: ResearchSource[] = [];
   const summaries: string[] = [];
   const allUsage: ModelUsage[] = [];
+  const collectedListings: import("@/types").ExtractedListing[] = [];
   const listingMode = isListingQuery(query);
 
   const agentSend = (agent: AgentName, status: "start" | "done", message?: string) => {
@@ -97,6 +101,7 @@ export async function runResearch(query: string, send: SendFn): Promise<string> 
 
     if (listings.length > 0) {
       console.log(`[EXTRACTOR] Found ${listings.length} listings`);
+      collectedListings.push(...listings);
       // Send listings as structured data — UI renders them as image cards
       send({ type: "listings", listings });
     }
@@ -147,5 +152,5 @@ export async function runResearch(query: string, send: SendFn): Promise<string> 
   }
 
   send({ type: "complete", report: finalReport, sources, agent: "report_writer", tokenUsage: finalUsage });
-  return finalReport;
+  return { report: finalReport, listings: collectedListings };
 }

@@ -7,13 +7,14 @@ datasource db {
 }
 
 model ResearchSession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   query     String
-  status    String   @default("pending") // pending | running | completed | failed
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    String    @default("pending") // pending | running | completed | failed
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   report    Report?
   sources   Source[]
+  listings  Listing[]
 }
 
 model Report {
@@ -30,6 +31,21 @@ model Source {
   title     String
   url       String
   snippet   String?
+  sessionId String
+  session   ResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+}
+
+model Listing {
+  id        String          @id @default(cuid())
+  name      String
+  price     String?
+  phone     String?
+  address   String?
+  rating    String?
+  website   String?
+  image     String?
+  notes     String?
   sessionId String
   session   ResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   createdAt DateTime        @default(now())
