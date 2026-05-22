@@ -408,9 +408,12 @@ export function ResearchLayout({ username, role }: Props) {
           )}
         </div>
 
-        {/* User menu */}
-        <div className="border-t border-border p-3">
+        {/* User menu + credit */}
+        <div className="border-t border-border p-3 space-y-2">
           <UserMenu username={username} role={role} />
+          <p className="text-[10px] text-muted-foreground/50 text-center leading-snug px-1">
+            Developed by <span className="text-muted-foreground/80 font-medium">Yogesh Mahawar</span>
+          </p>
         </div>
       </aside>
 
