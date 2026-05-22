@@ -64,6 +64,55 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ user }, { status: 201 });
 }
 
+// ── PATCH — update username / password / role ─────────────────────────────
+export async function PATCH(req: NextRequest) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+  const { username, password, role } = await req.json();
+
+  // Build update payload — only include fields that were sent
+  const data: Record<string, string> = {};
+
+  if (username?.trim()) {
+    const conflict = await prisma.user.findFirst({
+      where: { username: username.trim(), NOT: { id } },
+    });
+    if (conflict) {
+      return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+    }
+    data.username = username.trim();
+  }
+
+  if (password) {
+    if (password.length < 6) {
+      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+    }
+    data.password = await hash(password, 12);
+  }
+
+  if (role === "admin" || role === "user") {
+    data.role = role;
+  }
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  const updated = await prisma.user.update({
+    where: { id },
+    data,
+    select: { id: true, username: true, role: true, createdAt: true },
+  });
+
+  return NextResponse.json({ user: updated });
+}
+
 // ── DELETE — delete user ───────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const admin = await requireAdmin();
